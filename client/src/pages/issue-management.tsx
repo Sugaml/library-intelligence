@@ -26,20 +26,29 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { fetchBorrows, fetchBorrowedBookStats,BorrowedBookStats} from "@/lib/issue";
+import { s } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
 
 export default function IssueManagement() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("");
   const [programFilter, setProgramFilter] = useState("all");
   const { toast } = useToast();
 
-  const { data: borrowedBooks, isLoading } = useQuery({
-    queryKey: ['/api/borrowed-books'],
-  });
+  const token = localStorage.getItem("auth-token") || "";
+  console.log(token);
 
-  const { data: stats } = useQuery({
-    queryKey: ['/api/analytics/stats'],
-  });
+  const { data: stats, isLoading: statsLoading } = useQuery({
+      queryKey: ['borrowedBookStats'],
+      queryFn: () => fetchBorrowedBookStats(token),
+      enabled: !!token, // Only run if token exists
+    });
+  
+  const { data: borrowedBooks, isLoading } = useQuery({
+      queryKey: ['books', { search: searchQuery, program: programFilter,status: statusFilter }],
+      queryFn: () => fetchBorrows({ search: searchQuery,status: statusFilter }, token),
+      enabled: !!token, // only run when token is available
+    });
 
   const renewBookMutation = useMutation({
     mutationFn: async (borrowedBookId: number) => {
@@ -71,10 +80,11 @@ export default function IssueManagement() {
 
   const returnBookMutation = useMutation({
     mutationFn: async (borrowedBookId: number) => {
-      const response = await fetch(`/api/borrowed-books/${borrowedBookId}`, {
+      const response = await fetch(`http://localhost:8080/api/v1/lms/borrows/${borrowedBookId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           status: 'returned',
@@ -98,6 +108,36 @@ export default function IssueManagement() {
     },
   });
 
+  const approveBookMutation = useMutation({
+    mutationFn: async (borrowedBookId: number) => {
+      const response = await fetch(`http://localhost:8080/api/v1/lms/borrows/${borrowedBookId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: 'borrowed',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to approve book');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/borrowed-books'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/stats'] });
+      toast({
+        title: "Book approved",
+        description: "Book has been approved successfully",
+      });
+    },
+  });
+
+
   const navigationItems = [
     { label: "Analytics", path: "/librarian-dashboard" },
     { label: "Inventory", path: "/inventory-management" },
@@ -107,13 +147,19 @@ export default function IssueManagement() {
   ];
 
   const getStatusBadge = (borrowedBook: any) => {
-    const dueDate = new Date(borrowedBook.dueDate);
+    const dueDate = new Date(borrowedBook.due_date);
     const today = new Date();
     const isOverdue = dueDate < today;
     const dueSoon = (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24) <= 3;
 
     if (borrowedBook.status === 'returned') {
       return <Badge className="tu-bg-green bg-opacity-10 tu-text-green">Returned</Badge>;
+    }
+    if (borrowedBook.status === 'borrowed') {
+      return <Badge className="tu-bg-blue bg-opacity-10 tu-text-green">Borrowed</Badge>;
+    }
+    if (borrowedBook.status === 'pending') {
+      return <Badge className="tu-bg-yellow bg-opacity-10 tu-text-green">Pending</Badge>;
     }
     if (isOverdue) {
       return <Badge className="bg-red-100 text-red-800">Overdue</Badge>;
@@ -139,38 +185,62 @@ export default function IssueManagement() {
     }
   };
 
+  const getDaysReturnd = (dueDate: string) => {
+    const due = new Date(dueDate);
+    const today = new Date();
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return `${Math.abs(diffDays)} days overdue`;
+    } else if (diffDays === 0) {
+      return "Return today";
+    } else {
+      return `${diffDays} days remaining`;
+    }
+  };
+
   const filteredBorrowedBooks = borrowedBooks?.filter((item: any) => {
     if (searchQuery && 
         !item.book.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !item.user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !item.user.studentId.toLowerCase().includes(searchQuery.toLowerCase())) {
+        !item.student.full_name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !item.student.student_id.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
     
     if (statusFilter !== "all") {
-      const dueDate = new Date(item.dueDate);
+      const dueDate = new Date(item.due_date);
       const today = new Date();
       const isOverdue = dueDate < today;
       const dueSoon = (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24) <= 3;
       
       if (statusFilter === "active" && (item.status !== 'borrowed' || isOverdue)) return false;
+      if (statusFilter === "pending" && !isOverdue) return false;
       if (statusFilter === "overdue" && !isOverdue) return false;
       if (statusFilter === "due-soon" && !dueSoon) return false;
       if (statusFilter === "returned" && item.status !== 'returned') return false;
     }
     
-    if (programFilter !== "all" && item.user.program !== programFilter) return false;
+    if (programFilter !== "all" && item.student.program !== programFilter) return false;
     
     return true;
   });
 
-  const overdueBooks = borrowedBooks?.filter((item: any) => {
-    const dueDate = new Date(item.dueDate);
+const peindingBooks = borrowedBooks?.filter((item: any) => {
+    return item.status === 'pending';
+  }) || [];
+
+const returnedBooks = borrowedBooks?.filter((item: any) => {
+    return item.returned_date!==null && item.status === 'returned';
+}) || [];
+
+const overdueBooks = borrowedBooks?.filter((item: any) => {
+    const dueDate = new Date(item.due_date);
     return dueDate < new Date() && item.status === 'borrowed';
   }) || [];
 
-  const dueSoonBooks = borrowedBooks?.filter((item: any) => {
-    const dueDate = new Date(item.dueDate);
+const dueSoonBooks = borrowedBooks?.filter((item: any) => {
+    const dueDate = new Date(item.due_date);
     const today = new Date();
     const diffDays = (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
     return diffDays <= 3 && diffDays > 0 && item.status === 'borrowed';
@@ -196,25 +266,25 @@ export default function IssueManagement() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Total Issues"
-            value={stats?.borrowedBooks || 0}
+            value={stats?.totalBorrowedBooks || 0}
             icon={BookOpen}
             color="blue"
           />
           <StatsCard
             title="Active Issues"
-            value={borrowedBooks?.filter((b: any) => b.status === 'borrowed').length || 0}
+            value={stats?.pendingRequests || 0}
             icon={ArrowDownCircle}
             color="green"
           />
           <StatsCard
             title="Overdue Books"
-            value={overdueBooks.length}
+            value={stats?.totalOverdueBooks || 0}
             icon={AlertTriangle}
             color="red"
           />
           <StatsCard
             title="Due Soon"
-            value={dueSoonBooks.length}
+            value={stats?.dueSoon ?? 0}
             icon={Clock}
             color="amber"
           />
@@ -225,14 +295,14 @@ export default function IssueManagement() {
             <TabsTrigger value="all-issues">
               All Issues ({filteredBorrowedBooks?.length || 0})
             </TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending Issues ({peindingBooks?.length || 0})
+            </TabsTrigger>
             <TabsTrigger value="overdue">
               Overdue ({overdueBooks.length})
             </TabsTrigger>
-            <TabsTrigger value="due-soon">
-              Due Soon ({dueSoonBooks.length})
-            </TabsTrigger>
             <TabsTrigger value="returned">
-              Recently Returned
+              Recently Returned ({returnedBooks?.length || 0})
             </TabsTrigger>
           </TabsList>
 
@@ -265,6 +335,8 @@ export default function IssueManagement() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="borrowed">Borrowed</SelectItem>
                     <SelectItem value="overdue">Overdue</SelectItem>
                     <SelectItem value="due-soon">Due Soon</SelectItem>
                     <SelectItem value="returned">Returned</SelectItem>
@@ -325,7 +397,7 @@ export default function IssueManagement() {
                           <TableCell>
                             <div className="flex items-center space-x-4">
                               <img
-                                src={borrowedBook.book.coverImage}
+                                src={borrowedBook.book.cover_image}
                                 alt={`${borrowedBook.book.title} cover`}
                                 className="w-10 h-14 object-cover rounded"
                               />
@@ -334,23 +406,23 @@ export default function IssueManagement() {
                                 <div className="text-sm text-gray-500">by {borrowedBook.book.author}</div>
                                 <div className="text-xs text-gray-400 flex items-center mt-1">
                                   <User className="w-3 h-3 mr-1" />
-                                  {borrowedBook.user.fullName} ({borrowedBook.user.studentId})
+                                  {borrowedBook.student.full_name} ({borrowedBook.student.student_id})
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm text-gray-900">
-                              {new Date(borrowedBook.borrowedDate).toLocaleDateString()}
+                              {new Date(borrowedBook.created_at).toLocaleDateString()}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div className="text-gray-900">{new Date(borrowedBook.dueDate).toLocaleDateString()}</div>
+                              <div className="text-gray-900">{new Date(borrowedBook.due_date).toLocaleDateString()}</div>
                               <div className={`text-xs ${
-                                new Date(borrowedBook.dueDate) < new Date() ? 'text-red-600' : 'text-gray-500'
+                                new Date(borrowedBook.due_date) < new Date() ? 'text-red-600' : 'text-gray-500'
                               }`}>
-                                {getDaysUntilDue(borrowedBook.dueDate)}
+                                {getDaysUntilDue(borrowedBook.due_date)}
                               </div>
                             </div>
                           </TableCell>
@@ -358,7 +430,7 @@ export default function IssueManagement() {
                             {getStatusBadge(borrowedBook)}
                           </TableCell>
                           <TableCell>
-                            <span className="text-sm text-gray-900">{borrowedBook.renewalCount}/3</span>
+                            <span className="text-sm text-gray-900">{borrowedBook.renewal_count}/3</span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end space-x-2">
@@ -415,8 +487,44 @@ export default function IssueManagement() {
                             {getDaysUntilDue(book.dueDate)}
                           </p>
                         </div>
-                        <Button size="sm" className="tu-bg-red text-white hover:bg-red-700">
+                        <Button 
+                          size="sm" 
+                          className="tu-bg-red text-white hover:bg-red-700"
+                        >
                           Send Reminder
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pending">
+            <Card className="bg-red-50 border border-yellow-200 p-6">
+              <h3 className="text-lg font-semibold text-yellow-800 mb-4">Recent Books Request ({peindingBooks.length})</h3>
+              {peindingBooks.length === 0 ? (
+                <p className="text-red-600">No pending books at the moment.</p>
+              ) : (
+                <div className="space-y-4">
+                  {peindingBooks.slice(0, 5).map((book: any) => (
+                    <div key={book.id} className="bg-white rounded-lg p-4 border border-yellow-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{book.book.title}</h4>
+                          <p className="text-sm text-gray-600">Student: {book.student.full_name} ({book.student.student_id})</p>
+                          <p className="text-sm text-yellow-600 font-medium">
+                            {getDaysUntilDue(book.due_date)}
+                          </p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="tu-bg-red text-white hover:bg-green-700"
+                          onClick={() => approveBookMutation.mutate(book.id)}
+                          disabled={returnBookMutation.isPending}
+                          >
+                          Approve Request
                         </Button>
                       </div>
                     </div>
@@ -455,11 +563,30 @@ export default function IssueManagement() {
           </TabsContent>
 
           <TabsContent value="returned">
-            <Card className="p-8 text-center">
-              <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Recently returned books would be displayed here</p>
+          <Card className="bg-red-50 border border-red-200 p-6">
+              <h3 className="text-lg font-semibold gray-400 mb-4">Recent Returned Books ({returnedBooks.length || 0})</h3>
+              {returnedBooks.length === 0 ? (
+                <p className="text-red-600">No pending books at the moment.</p>
+              ) : (
+                <div className="space-y-4">
+                  {returnedBooks.slice(0, 5).map((book: any) => (
+                    <div key={book.id} className="bg-white rounded-lg p-4 border border-red-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium gray-500">{book.book.title}</h4>
+                          <p className="text-sm text-gray-600">Student: {book.student.full_name} ({book.student.student_id})</p>
+                          <p className="text-sm text-red-600 font-medium">
+                            {getDaysReturnd(book.returned_date)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

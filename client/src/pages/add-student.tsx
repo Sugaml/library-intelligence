@@ -23,6 +23,7 @@ const addStudentSchema = z.object({
     password: z.string().min(3, "password is required"),
     program: z.string().min(3, "Program is required"),
     student_id: z.string().min(5, "student ID is required"),
+    role: z.string().min(6, "role of student is required"),
 });
 
 type AddStudentFormData = z.infer<typeof addStudentSchema>;
@@ -41,6 +42,7 @@ export default function AddStudent() {
         password: "",
         program: "",
         student_id: "",
+        role: "student",
     },
   });
 
