@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   FileText,
   Search,
+  Plus,
+  Download,
   Eye,
   Send,
   CheckCircle,
@@ -135,11 +137,27 @@ console.log("length",students);
         backPath="/librarian-dashboard"
         navigationItems={navigationItems}
       />
-
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header and Buttons */}
+        <div className="flex justify-between items-center mb-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
           <p className="text-gray-600 mt-1">Monitor and manage student library accounts</p>
+        </div>
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={() => window.location.href = '/add-student'}
+              className="tu-bg-blue text-white hover:bg-blue-700"
+            >
+            <Plus className="w-4 h-4 mr-2" />
+              Add New Student
+            </Button>
+            <Button variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export Data
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
