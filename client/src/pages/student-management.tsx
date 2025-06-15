@@ -9,86 +9,56 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  GraduationCap, 
-  BookOpen, 
-  AlertTriangle, 
+import {
+  GraduationCap,
+  BookOpen,
+  AlertTriangle,
   FileText,
   Search,
-  User,
-  Mail,
   Eye,
   Send,
   CheckCircle,
-  Ban
+  Ban,
 } from "lucide-react";
-import { User as UserType } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { fetchStudents} from "@/lib/student";
+import { Student } from "@/lib/student";
+
 
 export default function StudentManagement() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [programFilter, setProgramFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("overdue"); // Default to show overdue students
+  const [programFilter, setProgramFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("overdue");
   const { toast } = useToast();
 
-  const { data: stats } = useQuery({
-    queryKey: ['/api/analytics/stats'],
-  });
-
-  const { data: borrowedBooks } = useQuery({
-    queryKey: ['/api/borrowed-books'],
-  });
-
-  const { data: fines } = useQuery({
-    queryKey: ['/api/fines'],
-  });
+  const { data: stats } = useQuery({ queryKey: ['/api/analytics/stats'] });
+  const { data: borrowedBooks } = useQuery({ queryKey: ['/api/borrowed-books'] });
+  const { data: fines } = useQuery({ queryKey: ['/api/fines'] });
 
   const navigationItems = [
     { label: "Analytics", path: "/librarian-dashboard" },
     { label: "Inventory", path: "/inventory-management" },
     { label: "Students", path: "/student-management" },
+    { label: "Issues", path: "/issue-management" },
     { label: "Reports", path: "/reports" },
   ];
 
-  // Mock student data with computed stats from borrowed books and fines
-  const studentData = [
-    {
-      id: 1,
-      name: "Anil Kumar Sharma",
-      studentId: "MBA2024001",
-      email: "anil.sharma@tu.edu.np",
-      program: "MBA",
-      borrowedCount: 3,
-      overdueCount: 1,
-      fines: 100,
-      status: "overdue",
-      profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40"
-    },
-    {
-      id: 2,
-      name: "Priya Nepal",
-      studentId: "MBAIT2024002",
-      email: "priya.nepal@tu.edu.np",
-      program: "MBAIT",
-      borrowedCount: 2,
-      overdueCount: 2,
-      fines: 200,
-      status: "high-risk",
-      profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40"
-    },
-    {
-      id: 3,
-      name: "Rajesh Bhattarai",
-      studentId: "MBAFC2024003",
-      email: "rajesh.bhattarai@tu.edu.np",
-      program: "MBAFC",
-      borrowedCount: 1,
-      overdueCount: 1,
-      fines: 50,
-      status: "warning",
-      profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=40"
-    }
-  ];
+const token = localStorage.getItem("auth-token") || "";
+
+const { data: students = [], isLoading, error } = useQuery<Student[]>({
+  queryKey: ['students', { search: searchQuery, program: programFilter, status: statusFilter }],
+  queryFn: () =>
+    fetchStudents(
+      {
+        search: searchQuery,
+        program: programFilter,
+        category: "all", // if your API accepts this
+      },
+      token
+    ),
+  enabled: !!token,
+});
+console.log("length",students);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -114,7 +84,7 @@ export default function StudentManagement() {
       MBAFC: "tu-bg-amber bg-opacity-10 tu-text-amber",
       "MBA GLM": "bg-purple-100 text-purple-600",
     };
-    
+
     return (
       <Badge className={programColors[program as keyof typeof programColors] || "bg-gray-100 text-gray-600"}>
         {program}
@@ -122,16 +92,16 @@ export default function StudentManagement() {
     );
   };
 
-  const filteredStudents = studentData.filter(student => {
-    if (searchQuery && !student.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !student.studentId.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !student.email.toLowerCase().includes(searchQuery.toLowerCase())) {
+  const filteredStudents = students.filter(student => {
+    if (
+      searchQuery &&
+      !student.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !student.studentId.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !student.email.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
       return false;
     }
-    if (programFilter && student.program !== programFilter) return false;
-    if (statusFilter === "active" && student.overdueCount > 0) return false;
-    if (statusFilter === "overdue" && student.overdueCount === 0) return false;
-    if (statusFilter === "fines" && student.fines === 0) return false;
+    if (programFilter !== "all" && student.program !== programFilter) return false;
     return true;
   });
 
@@ -160,54 +130,29 @@ export default function StudentManagement() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        title="TU Library - Admin"
+        title="SOMTU Library - Admin"
         showBackButton
         backPath="/librarian-dashboard"
         navigationItems={navigationItems}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
           <p className="text-gray-600 mt-1">Monitor and manage student library accounts</p>
         </div>
 
-        {/* Student Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatsCard
-            title="Total Students"
-            value={stats?.totalStudents || 0}
-            icon={GraduationCap}
-            color="blue"
-          />
-          <StatsCard
-            title="Active Borrowers"
-            value={stats?.activeStudents || 0}
-            icon={BookOpen}
-            color="green"
-          />
-          <StatsCard
-            title="Overdue Students"
-            value={studentData.filter(s => s.overdueCount > 0).length}
-            icon={AlertTriangle}
-            color="amber"
-          />
-          <StatsCard
-            title="Pending Clearance"
-            value={0}
-            icon={FileText}
-            color="red"
-          />
+          <StatsCard title="Total Students" value={stats?.totalStudents || 0} icon={GraduationCap} color="blue" />
+          <StatsCard title="Active Borrowers" value={stats?.activeStudents || 0} icon={BookOpen} color="green" />
+          <StatsCard title="Overdue Students" value={students.filter(s => s.overdueCount > 0).length} icon={AlertTriangle} color="amber" />
+          <StatsCard title="Pending Clearance" value={0} icon={FileText} color="red" />
         </div>
 
-        {/* Search and Filters */}
         <Card className="shadow-sm p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                Search Students
-              </Label>
+              <Label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">Search Students</Label>
               <div className="relative">
                 <Input
                   id="search"
@@ -220,7 +165,7 @@ export default function StudentManagement() {
                 <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
               </div>
             </div>
-            
+
             <div>
               <Label className="block text-sm font-medium text-gray-700 mb-2">Program</Label>
               <Select value={programFilter} onValueChange={setProgramFilter}>
@@ -228,7 +173,7 @@ export default function StudentManagement() {
                   <SelectValue placeholder="All Programs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Programs</SelectItem>
+                  <SelectItem value="all">All Programs</SelectItem>
                   <SelectItem value="MBA">MBA</SelectItem>
                   <SelectItem value="MBAIT">MBAIT</SelectItem>
                   <SelectItem value="MBAFC">MBAFC</SelectItem>
@@ -236,7 +181,7 @@ export default function StudentManagement() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label className="block text-sm font-medium text-gray-700 mb-2">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -244,7 +189,7 @@ export default function StudentManagement() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="overdue">Has Overdue</SelectItem>
                   <SelectItem value="fines">Has Fines</SelectItem>
@@ -255,16 +200,13 @@ export default function StudentManagement() {
           </div>
         </Card>
 
-        {/* Student List */}
         <Card className="shadow-sm overflow-hidden">
           <CardHeader className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Student Records</CardTitle>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  Showing {filteredStudents.length} students with issues requiring attention
-                </span>
-              </div>
+              <span className="text-sm text-gray-500">
+                Showing {filteredStudents.length} students with issues requiring attention
+              </span>
             </div>
           </CardHeader>
 
@@ -303,9 +245,7 @@ export default function StudentManagement() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getProgramBadge(student.program)}
-                      </TableCell>
+                      <TableCell>{getProgramBadge(student.program)}</TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div>Borrowed: <span className="font-medium tu-text-amber">{student.borrowedCount}</span></div>
@@ -315,42 +255,21 @@ export default function StudentManagement() {
                       <TableCell>
                         <span className="font-medium text-red-600">Rs. {student.fines}</span>
                       </TableCell>
-                      <TableCell>
-                        {getStatusBadge(student.status)}
-                      </TableCell>
+                      <TableCell>{getStatusBadge(student.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10"
-                          >
+                          <Button variant="ghost" size="sm" className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="tu-text-amber hover:tu-bg-amber hover:bg-opacity-10"
-                            onClick={() => handleSendReminder(student.name)}
-                          >
+                          <Button variant="ghost" size="sm" className="tu-text-amber hover:tu-bg-amber hover:bg-opacity-10" onClick={() => handleSendReminder(student.name)}>
                             <Send className="w-4 h-4" />
                           </Button>
-                          {student.status === "warning" || student.status === "overdue" ? (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="tu-text-green hover:tu-bg-green hover:bg-opacity-10"
-                              onClick={() => handleClearStudent(student.name)}
-                            >
+                          {(student.status === "warning" || student.status === "overdue") ? (
+                            <Button variant="ghost" size="sm" className="tu-text-green hover:tu-bg-green hover:bg-opacity-10" onClick={() => handleClearStudent(student.name)}>
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                           ) : (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => handleBlockStudent(student.name)}
-                            >
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => handleBlockStudent(student.name)}>
                               <Ban className="w-4 h-4" />
                             </Button>
                           )}

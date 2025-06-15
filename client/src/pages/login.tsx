@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { login, saveAuthUser } from "@/lib/auth";
+import { login, saveAuthUser, saveAuthToken } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { Building2 } from "lucide-react";
 
@@ -25,6 +25,7 @@ export default function Login() {
     try {
       const response = await login({ username, password });
       saveAuthUser(response.user);
+      saveAuthToken(response.accessToken);
       setAuthUser(response.user);
       
       toast({
@@ -71,8 +72,8 @@ export default function Login() {
           <div className="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
             <Building2 className="tu-text-blue text-3xl" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">TU Library System</h1>
-          <p className="text-blue-100">Tribhuvan University Central Library</p>
+          <h1 className="text-2xl font-bold mb-2">SOMTU Library System</h1>
+          <p className="text-blue-100">Tribhuvan University</p>
         </div>
         
         <CardContent className="p-8">

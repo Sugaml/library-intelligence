@@ -82,7 +82,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        title="TU Library"
+        title="SOMTU Library"
         navigationItems={navigationItems}
       />
 

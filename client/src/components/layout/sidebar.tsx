@@ -52,7 +52,7 @@ export default function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
           {!collapsed && (
             <div className="flex items-center space-x-2">
               <Building2 className="tu-text-blue text-xl" />
-              <span className="font-bold text-sidebar-foreground">TU Library</span>
+              <span className="font-bold text-sidebar-foreground">SOMTU Library</span>
             </div>
           )}
           <Button

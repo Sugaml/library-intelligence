@@ -9,13 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Book, 
-  CheckCircle, 
-  AlertTriangle, 
-  ExternalLink, 
-  Plus, 
-  Download, 
+import {
+  Book,
+  CheckCircle,
+  AlertTriangle,
+  ExternalLink,
+  Plus,
+  Download,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -26,30 +26,36 @@ import {
 import { Book as BookType } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { fetchBooks} from "@/lib/book";
+
 
 export default function InventoryManagement() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [programFilter, setProgramFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [programFilter, setProgramFilter] = useState("all-programs");
+  const [categoryFilter, setCategoryFilter] = useState("all-categories");
+  const [statusFilter, setStatusFilter] = useState("all-status");
   const { toast } = useToast();
 
   const { data: stats } = useQuery({
     queryKey: ['/api/analytics/stats'],
   });
 
-  const { data: books, isLoading } = useQuery({
-    queryKey: ['/api/books', { search: searchQuery, program: programFilter, category: categoryFilter }],
-  });
+  const token = localStorage.getItem("auth-token") || "";
+    console.log(token);
+  
+    const { data: books, isLoading, error } = useQuery({
+      queryKey: ['books', { search: searchQuery, program: programFilter, category: categoryFilter }],
+      queryFn: () => fetchBooks({ search: searchQuery, program: programFilter, category: categoryFilter }, token),
+      enabled: !!token, // only run when token is available
+    });
+  
 
   const deleteBookMutation = useMutation({
     mutationFn: async (bookId: number) => {
       const response = await fetch(`/api/books/${bookId}`, {
         method: 'DELETE',
       });
-      if (!response.ok) {
-        throw new Error('Failed to delete book');
-      }
+      if (!response.ok) throw new Error('Failed to delete book');
       return response.json();
     },
     onSuccess: () => {
@@ -69,13 +75,6 @@ export default function InventoryManagement() {
     },
   });
 
-  const navigationItems = [
-    { label: "Analytics", path: "/librarian-dashboard" },
-    { label: "Inventory", path: "/inventory-management" },
-    { label: "Students", path: "/student-management" },
-    { label: "Reports", path: "/reports" },
-  ];
-
   const getStatusBadge = (book: BookType) => {
     if (book.availableCopies === 0) {
       return <Badge className="bg-red-100 text-red-800">Out of Stock</Badge>;
@@ -93,7 +92,6 @@ export default function InventoryManagement() {
       MBAFC: "tu-bg-amber bg-opacity-10 tu-text-amber",
       "MBA GLM": "bg-purple-100 text-purple-600",
     };
-    
     return (
       <Badge className={programColors[program as keyof typeof programColors] || "bg-gray-100 text-gray-600"}>
         {program}
@@ -108,24 +106,32 @@ export default function InventoryManagement() {
     return true;
   });
 
+  const navigationItems = [
+    { label: "Analytics", path: "/librarian-dashboard" },
+    { label: "Inventory", path: "/inventory-management" },
+    { label: "Students", path: "/student-management" },
+    { label: "Issues", path: "/issue-management" },
+    { label: "Reports", path: "/reports" },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        title="TU Library - Admin"
+        title="SOMTU Library - Admin"
         showBackButton
         backPath="/librarian-dashboard"
         navigationItems={navigationItems}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
+        {/* Header and Buttons */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
             <p className="text-gray-600 mt-1">Manage your library's book collection</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button 
+            <Button
               onClick={() => window.location.href = '/add-book'}
               className="tu-bg-blue text-white hover:bg-blue-700"
             >
@@ -139,26 +145,11 @@ export default function InventoryManagement() {
           </div>
         </div>
 
-        {/* Inventory Stats */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <StatsCard
-            title="Total Books"
-            value={stats?.totalBooks || 0}
-            icon={Book}
-            color="blue"
-          />
-          <StatsCard
-            title="Available"
-            value={stats?.availableBooks || 0}
-            icon={CheckCircle}
-            color="green"
-          />
-          <StatsCard
-            title="Borrowed"
-            value={stats?.borrowedBooks || 0}
-            icon={ExternalLink}
-            color="amber"
-          />
+          <StatsCard title="Total Books" value={stats?.totalBooks || 0} icon={Book} color="blue" />
+          <StatsCard title="Available" value={stats?.availableBooks || 0} icon={CheckCircle} color="green" />
+          <StatsCard title="Borrowed" value={stats?.borrowedBooks || 0} icon={ExternalLink} color="amber" />
           <StatsCard
             title="Low Stock Alert"
             value={filteredBooks?.filter((b: BookType) => b.availableCopies <= 2 && b.availableCopies > 0).length || 0}
@@ -167,13 +158,11 @@ export default function InventoryManagement() {
           />
         </div>
 
-        {/* Filters and Search */}
+        {/* Filters */}
         <Card className="shadow-sm p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                Search Books
-              </Label>
+              <Label htmlFor="search">Search Books</Label>
               <div className="relative">
                 <Input
                   id="search"
@@ -186,15 +175,15 @@ export default function InventoryManagement() {
                 <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
               </div>
             </div>
-            
+
             <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-2">Program</Label>
+              <Label>Program</Label>
               <Select value={programFilter} onValueChange={setProgramFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Programs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Programs</SelectItem>
+                  <SelectItem value="all-programs">All Programs</SelectItem>
                   <SelectItem value="MBA">MBA</SelectItem>
                   <SelectItem value="MBAIT">MBAIT</SelectItem>
                   <SelectItem value="MBAFC">MBAFC</SelectItem>
@@ -202,15 +191,15 @@ export default function InventoryManagement() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-2">Status</Label>
+              <Label>Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all-status">All Status</SelectItem>
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="borrowed">Borrowed</SelectItem>
                   <SelectItem value="low-stock">Low Stock</SelectItem>
@@ -218,15 +207,15 @@ export default function InventoryManagement() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-2">Category</Label>
+              <Label>Category</Label>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all-categories">All Categories</SelectItem>
                   <SelectItem value="Finance">Finance</SelectItem>
                   <SelectItem value="Marketing">Marketing</SelectItem>
                   <SelectItem value="Management">Management</SelectItem>
@@ -242,10 +231,8 @@ export default function InventoryManagement() {
           <CardHeader className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Book Inventory</CardTitle>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  Showing 1-{Math.min(20, filteredBooks?.length || 0)} of {filteredBooks?.length || 0} books
-                </span>
+              <div className="text-sm text-gray-500">
+                Showing 1-{Math.min(20, filteredBooks?.length || 0)} of {filteredBooks?.length || 0} books
               </div>
             </div>
           </CardHeader>
@@ -273,13 +260,13 @@ export default function InventoryManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredBooks?.slice(0, 20).map((book: BookType) => (
+                  {filteredBooks.slice(0, 20).map((book: BookType) => (
                     <TableRow key={book.id} className="hover:bg-gray-50">
                       <TableCell>
                         <div className="flex items-center space-x-4">
                           <img
-                            src={book.coverImage || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=40&h=60"}
-                            alt={`${book.title} cover`}
+                            src={book.coverImage || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c"}
+                            alt={book.title}
                             className="w-10 h-14 object-cover rounded"
                           />
                           <div>
@@ -289,9 +276,7 @@ export default function InventoryManagement() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getProgramBadge(book.program)}
-                      </TableCell>
+                      <TableCell>{getProgramBadge(book.program)}</TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div>Total: <span className="font-medium">{book.totalCopies}</span></div>
@@ -299,9 +284,7 @@ export default function InventoryManagement() {
                           <div>Borrowed: <span className="font-medium tu-text-amber">{book.totalCopies - book.availableCopies}</span></div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getStatusBadge(book)}
-                      </TableCell>
+                      <TableCell>{getStatusBadge(book)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <Button variant="ghost" size="sm" className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10">
@@ -310,9 +293,9 @@ export default function InventoryManagement() {
                           <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-red-600 hover:bg-red-50"
                             onClick={() => deleteBookMutation.mutate(book.id)}
                             disabled={deleteBookMutation.isPending}
@@ -327,36 +310,6 @@ export default function InventoryManagement() {
               </Table>
             )}
           </div>
-
-          {/* Pagination */}
-          {filteredBooks && filteredBooks.length > 20 && (
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <Button variant="outline">Previous</Button>
-                <Button variant="outline">Next</Button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">1</span> to{" "}
-                    <span className="font-medium">{Math.min(20, filteredBooks.length)}</span> of{" "}
-                    <span className="font-medium">{filteredBooks.length}</span> results
-                  </p>
-                </div>
-                <div className="flex space-x-1">
-                  <Button variant="outline" size="sm">
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button variant="default" size="sm">1</Button>
-                  <Button variant="outline" size="sm">2</Button>
-                  <Button variant="outline" size="sm">3</Button>
-                  <Button variant="outline" size="sm">
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </Card>
       </div>
     </div>

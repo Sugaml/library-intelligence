@@ -52,10 +52,11 @@ export default function AddBook() {
 
   const addBookMutation = useMutation({
     mutationFn: async (data: AddBookFormData) => {
-      const response = await fetch('/api/books', {
+      const response = await fetch('http://localhost:8080/api/v1/lms/books', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth-token')}`,
         },
         body: JSON.stringify(data),
       });
@@ -105,7 +106,7 @@ export default function AddBook() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        title="TU Library - Admin"
+        title="SOMTU Library - Admin"
         showBackButton
         backPath="/inventory-management"
         navigationItems={navigationItems}

@@ -1,13 +1,15 @@
 import { User } from "@shared/schema";
 
 export interface AuthUser {
-  id: number;
+  id: string;
   username: string;
-  role: string;
-  email: string;
   fullName: string;
-  program?: string;
+  email: string;
+  role: string;
   studentId?: string;
+  program?: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface LoginCredentials {
@@ -26,24 +28,37 @@ export interface RegisterData {
 }
 
 export interface AuthResponse {
+  accessToken: string;
   user: AuthUser;
 }
 
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  const response = await fetch("http://localhost:8080/api/v1/lms/users/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(credentials),
   });
-
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || 'Login failed');
   }
+  const json = await response.json();
+  const mappedResponse: AuthResponse = {
+    accessToken: json.data.access_token,
+    user: {
+      id: json.data.User.id,
+      username: json.data.User.username,
+      fullName: json.data.User.full_name,
+      email: json.data.User.email,
+      role: json.data.User.role,
+      studentId: json.data.User.student_id,
+      program: json.data.User.program,
+      isActive: json.data.User.is_active,
+      createdAt: json.data.User.created_at,
+    },
+  };
 
-  return response.json();
+  return mappedResponse;
 };
 
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
@@ -70,6 +85,10 @@ export const logout = (): void => {
 
 export const saveAuthUser = (user: AuthUser): void => {
   localStorage.setItem('auth-user', JSON.stringify(user));
+};
+
+export const saveAuthToken = (token: string): void => {
+  localStorage.setItem('auth-token', token);
 };
 
 export const getAuthUser = (): AuthUser | null => {

@@ -52,7 +52,7 @@ export default function LibrarianDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        title="TU Library - Admin"
+        title="SOMTU Library - Admin"
         navigationItems={navigationItems}
       />
 

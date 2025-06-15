@@ -29,8 +29,8 @@ import { queryClient } from "@/lib/queryClient";
 
 export default function IssueManagement() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [programFilter, setProgramFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [programFilter, setProgramFilter] = useState("all");
   const { toast } = useToast();
 
   const { data: borrowedBooks, isLoading } = useQuery({
@@ -147,7 +147,7 @@ export default function IssueManagement() {
       return false;
     }
     
-    if (statusFilter) {
+    if (statusFilter !== "all") {
       const dueDate = new Date(item.dueDate);
       const today = new Date();
       const isOverdue = dueDate < today;
@@ -159,7 +159,7 @@ export default function IssueManagement() {
       if (statusFilter === "returned" && item.status !== 'returned') return false;
     }
     
-    if (programFilter && item.user.program !== programFilter) return false;
+    if (programFilter !== "all" && item.user.program !== programFilter) return false;
     
     return true;
   });
@@ -179,7 +179,7 @@ export default function IssueManagement() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
-        title="TU Library - Admin"
+        title="SOMTU Library - Admin"
         showBackButton
         backPath="/librarian-dashboard"
         navigationItems={navigationItems}
@@ -263,7 +263,7 @@ export default function IssueManagement() {
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="overdue">Overdue</SelectItem>
                     <SelectItem value="due-soon">Due Soon</SelectItem>
@@ -279,7 +279,7 @@ export default function IssueManagement() {
                     <SelectValue placeholder="All Programs" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Programs</SelectItem>
+                    <SelectItem value="all">All Programs</SelectItem>
                     <SelectItem value="MBA">MBA</SelectItem>
                     <SelectItem value="MBAIT">MBAIT</SelectItem>
                     <SelectItem value="MBAFC">MBAFC</SelectItem>

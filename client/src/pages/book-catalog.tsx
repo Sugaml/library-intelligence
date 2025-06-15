@@ -10,16 +10,23 @@ import { Button } from "@/components/ui/button";
 import { Search, Grid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Book } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { fetchBooks} from "@/lib/book";
+
 
 export default function BookCatalog() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [programFilter, setProgramFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [programFilter, setProgramFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const { toast } = useToast();
+  
+  const token = localStorage.getItem("auth-token") || "";
+  console.log(token);
 
-  const { data: books, isLoading } = useQuery({
-    queryKey: ['/api/books', { search: searchQuery, program: programFilter, category: categoryFilter }],
+  const { data: books, isLoading, error } = useQuery({
+    queryKey: ['books', { search: searchQuery, program: programFilter, category: categoryFilter }],
+    queryFn: () => fetchBooks({ search: searchQuery, program: programFilter, category: categoryFilter }, token),
+    enabled: !!token, // only run when token is available
   });
 
   const handleBorrowBook = (book: Book) => {
@@ -79,7 +86,7 @@ export default function BookCatalog() {
                   <SelectValue placeholder="All Programs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Programs</SelectItem>
+                  <SelectItem value="all">All Programs</SelectItem>
                   <SelectItem value="MBA">MBA</SelectItem>
                   <SelectItem value="MBAIT">MBAIT</SelectItem>
                   <SelectItem value="MBAFC">MBAFC</SelectItem>
@@ -95,7 +102,7 @@ export default function BookCatalog() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="Finance">Finance</SelectItem>
                   <SelectItem value="Marketing">Marketing</SelectItem>
                   <SelectItem value="Management">Management</SelectItem>
