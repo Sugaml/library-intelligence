@@ -21,6 +21,7 @@ export default function LibrarianDashboard() {
     { label: "Analytics", path: "/librarian-dashboard" },
     { label: "Inventory", path: "/inventory-management" },
     { label: "Students", path: "/student-management" },
+    { label: "Issues", path: "/issue-management" },
     { label: "Reports", path: "/reports" },
   ];
 

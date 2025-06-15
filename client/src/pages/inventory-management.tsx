@@ -125,7 +125,10 @@ export default function InventoryManagement() {
             <p className="text-gray-600 mt-1">Manage your library's book collection</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button className="tu-bg-blue text-white hover:bg-blue-700">
+            <Button 
+              onClick={() => window.location.href = '/add-book'}
+              className="tu-bg-blue text-white hover:bg-blue-700"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add New Book
             </Button>

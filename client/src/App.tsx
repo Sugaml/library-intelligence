@@ -13,6 +13,8 @@ import QRScanner from "@/pages/qr-scanner";
 import MyBooks from "@/pages/my-books";
 import InventoryManagement from "@/pages/inventory-management";
 import StudentManagement from "@/pages/student-management";
+import AddBook from "@/pages/add-book";
+import IssueManagement from "@/pages/issue-management";
 
 function ProtectedRoute({ 
   children, 
@@ -111,6 +113,18 @@ function Router() {
       <Route path="/student-management">
         <ProtectedRoute requiredRole="librarian">
           <StudentManagement />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/add-book">
+        <ProtectedRoute requiredRole="librarian">
+          <AddBook />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/issue-management">
+        <ProtectedRoute requiredRole="librarian">
+          <IssueManagement />
         </ProtectedRoute>
       </Route>
 
