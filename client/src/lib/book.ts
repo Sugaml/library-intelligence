@@ -6,12 +6,11 @@ export interface BookQueryParams {
     category?: string;
   }
   
-
 export const fetchBooks = async (
     params: BookQueryParams,
     token: string
   ): Promise<Book[]> => {
-    const url = new URL("http://localhost:8080/api/v1/lms/users");
+    const url = new URL("http://localhost:8080/api/v1/lms/books");
   
     if (params.search) url.searchParams.append("search", params.search);
     if (params.program) url.searchParams.append("program", params.program);

@@ -22,10 +22,10 @@ const addBookSchema = z.object({
   isbn: z.string().min(10, "Valid ISBN is required"),
   category: z.string().min(1, "Category is required"),
   program: z.string().min(1, "Program is required"),
-  totalCopies: z.number().min(1, "At least 1 copy is required"),
-  availableCopies: z.number().min(0, "Available copies cannot be negative"),
+  total_copies: z.number().min(1, "At least 1 copy is required"),
+  available_copies: z.number().min(0, "Available copies cannot be negative"),
   description: z.string().optional(),
-  coverImage: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  cover_image: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 type AddBookFormData = z.infer<typeof addBookSchema>;
@@ -43,10 +43,10 @@ export default function AddBook() {
       isbn: "",
       category: "",
       program: "",
-      totalCopies: 1,
-      availableCopies: 1,
+      total_copies: 1,
+      available_copies: 1,
       description: "",
-      coverImage: "",
+      cover_image: "",
     },
   });
 
@@ -228,7 +228,7 @@ export default function AddBook() {
 
                   <FormField
                     control={form.control}
-                    name="totalCopies"
+                    name="total_copies"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Total Copies *</FormLabel>
@@ -248,7 +248,7 @@ export default function AddBook() {
 
                   <FormField
                     control={form.control}
-                    name="availableCopies"
+                    name="available_copies"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Available Copies *</FormLabel>
@@ -272,7 +272,7 @@ export default function AddBook() {
 
                 <FormField
                   control={form.control}
-                  name="coverImage"
+                  name="cover_image"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cover Image URL</FormLabel>
