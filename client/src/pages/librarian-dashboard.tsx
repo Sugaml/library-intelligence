@@ -5,13 +5,19 @@ import RecentActivity from "@/components/recent-activity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, ArrowUp, AlertTriangle, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { fetchLibraryDashboardStats } from "@/lib/dashboard";
 
 export default function LibrarianDashboard() {
   const { user } = useAuth();
 
-  const { data: stats } = useQuery({
-    queryKey: ['/api/analytics/stats'],
-  });
+const token = localStorage.getItem("auth-token") || "";
+console.log(token);
+  
+const { data: stats, isLoading: statsLoading } = useQuery({
+        queryKey: ['borrowedBookStats'],
+        queryFn: () => fetchLibraryDashboardStats(token),
+        enabled: !!token, // Only run if token exists
+      });
 
   const { data: programStats } = useQuery({
     queryKey: ['/api/analytics/program-stats'],
@@ -62,7 +68,7 @@ export default function LibrarianDashboard() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Library Analytics Dashboard</h1>
           <p className="text-gray-600">
             Today is <span className="font-medium">{new Date().toLocaleDateString()}</span> | 
-            Total Active Students: <span className="font-medium tu-text-blue">{stats?.activeStudents || 0}</span>
+            Total Active Students: <span className="font-medium tu-text-blue">{stats?.totalStudents || 0}</span>
           </p>
         </div>
 
