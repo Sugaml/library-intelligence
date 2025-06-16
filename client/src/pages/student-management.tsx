@@ -145,7 +145,7 @@ console.log("length",students);
           <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
           <p className="text-gray-600 mt-1">Monitor and manage student library accounts</p>
         </div>
-          <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4">
             <Button
               onClick={() => window.location.href = '/add-student'}
               className="tu-bg-blue text-white hover:bg-blue-700"
@@ -276,7 +276,12 @@ console.log("length",students);
                       <TableCell>{getStatusBadge(student.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button variant="ghost" size="sm" className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10"
+                            onClick={() => window.location.href = '/student-details/' + student.id}
+                            >
                             <Eye className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="sm" className="tu-text-amber hover:tu-bg-amber hover:bg-opacity-10" onClick={() => handleSendReminder(student.name)}>

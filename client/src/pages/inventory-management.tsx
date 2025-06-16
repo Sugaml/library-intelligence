@@ -27,6 +27,7 @@ import { Book as BookType } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { fetchBooks} from "@/lib/book";
+const PAGE_SIZE = 10;
 
 
 export default function InventoryManagement() {
@@ -43,11 +44,45 @@ export default function InventoryManagement() {
   const token = localStorage.getItem("auth-token") || "";
     console.log(token);
   
-    const { data: books, isLoading, error } = useQuery({
-      queryKey: ['books', { search: searchQuery, program: programFilter, category: categoryFilter }],
-      queryFn: () => fetchBooks({ search: searchQuery, program: programFilter, category: categoryFilter }, token),
-      enabled: !!token, // only run when token is available
+    // const { data: books, isLoading, error } = useQuery({
+    //   queryKey: ['books', { search: searchQuery, program: programFilter, category: categoryFilter }],
+    //   queryFn: () => fetchBooks({ search: searchQuery, program: programFilter, category: categoryFilter }, token),
+    //   enabled: !!token, // only run when token is available
+    // });
+  
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+    const [dueDate, setDueDate] = useState("");
+  
+    // Fetch paginated books data
+    const {
+      data,
+      isLoading,
+      error,
+    } = useQuery<{
+      data: BookType[];
+      total: number;
+      page: number;
+    }>({
+      queryKey: ["books", { search, page }],
+       queryFn: () =>
+        fetchBooks(
+          {
+            search,
+            page,
+            size: PAGE_SIZE,
+          },
+          token
+        ),
+      enabled: !!token,
+      keepPreviousData: true, // optional: keep data while loading next page
     });
+  
+    const books = data?.books || [];
+    console.log(books);
+    const totalBooks = data?.total || 0;
+    const totalPages = Math.ceil(totalBooks / PAGE_SIZE);
   
 
   const deleteBookMutation = useMutation({
@@ -309,6 +344,32 @@ export default function InventoryManagement() {
                 </TableBody>
               </Table>
             )}
+            {/* Pagination Controls */}
+<div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-white">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setPage((old) => Math.max(old - 1, 1))}
+    disabled={page === 1}
+  >
+    <ChevronLeft className="w-4 h-4 mr-1" />
+    Prev
+  </Button>
+
+  <span className="text-sm text-gray-700">
+    Page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
+  </span>
+
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setPage((old) => (old < totalPages ? old + 1 : old))}
+    disabled={page === totalPages}
+  >
+    Next
+    <ChevronRight className="w-4 h-4 ml-1" />
+  </Button>
+</div>
           </div>
         </Card>
       </div>

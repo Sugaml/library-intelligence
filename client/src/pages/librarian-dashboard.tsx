@@ -5,7 +5,7 @@ import RecentActivity from "@/components/recent-activity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Book, ArrowUp, AlertTriangle, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { fetchLibraryDashboardStats } from "@/lib/dashboard";
+import { fetchLibraryDashboardStats,fetchBooksByProgramStats } from "@/lib/dashboard";
 
 export default function LibrarianDashboard() {
   const { user } = useAuth();
@@ -18,10 +18,17 @@ const { data: stats, isLoading: statsLoading } = useQuery({
         queryFn: () => fetchLibraryDashboardStats(token),
         enabled: !!token, // Only run if token exists
       });
-
-  const { data: programStats } = useQuery({
-    queryKey: ['/api/analytics/program-stats'],
-  });
+      
+const { data: programStatss, isLoading: programStatsLoading } = useQuery({
+        queryKey: ['program-stats'],
+        queryFn: () => fetchBooksByProgramStats(token),
+        enabled: !!token, // Only run if token exists
+      });
+console.log("programs",programStatss);
+const { data: programStats } = useQuery({
+        queryKey: ['/api/analytics/program-stats'],
+      });
+    console.log("programs",programStats);
 
   const navigationItems = [
     { label: "Analytics", path: "/librarian-dashboard" },

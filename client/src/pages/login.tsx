@@ -128,29 +128,6 @@ export default function Login() {
               >
                 {loading ? "Logging in..." : "Login"}
               </Button>
-              
-              <div className="text-center text-sm text-gray-600">
-                Demo accounts:
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleDemoLogin('student')}
-                  className="tu-border-blue tu-text-blue hover:bg-blue-50"
-                >
-                  Student Demo
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleDemoLogin('librarian')}
-                  className="tu-border-green tu-text-green hover:bg-green-50"
-                >
-                  Librarian Demo
-                </Button>
-              </div>
             </div>
           </form>
         </CardContent>
