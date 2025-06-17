@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery,useMutation, useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/layout/navbar";
 import BookCard from "@/components/book-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,12 @@ import { Search, Grid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { Book } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { fetchBooks} from "@/lib/book";
+import { useParams, useLocation } from "wouter";
+import { Student } from '@/lib/student';
+import {issueBook, BorrowedBooRequest} from "@/lib/issue";
+
+
+const PAGE_SIZE = 10;
 
 
 export default function BookCatalog() {
@@ -19,17 +25,94 @@ export default function BookCatalog() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const { toast } = useToast();
-  
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const { id: bookId } = useParams();
+
   const token = localStorage.getItem("auth-token") || "";
+  const studentId = localStorage.getItem("studentId") || "";  
   console.log(token);
 
-  const { data: books, isLoading, error } = useQuery({
-    queryKey: ['books', { search: searchQuery, program: programFilter, category: categoryFilter }],
-    queryFn: () => fetchBooks({ search: searchQuery, program: programFilter, category: categoryFilter }, token),
-    enabled: !!token, // only run when token is available
-  });
-
+   const [search, setSearch] = useState("");
+      const [page, setPage] = useState(1);
+      const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+      const [dueDate, setDueDate] = useState("");
+    
+      // Fetch paginated books data
+      const {
+        data,
+        isLoading,
+        error,
+      } = useQuery<{
+        data: Book[];
+        total: number;
+        page: number;
+      }>({
+        queryKey: ["books", { search, page }],
+         queryFn: () =>
+          fetchBooks(
+            {
+              search,
+              page,
+              size: PAGE_SIZE,
+            },
+            token
+          ),
+        enabled: !!token,
+        keepPreviousData: true, // optional: keep data while loading next page
+      });
+    
+      const books = data?.books || [];
+      console.log(books);
+      const totalBooks = data?.total || 0;
+      const totalPages = Math.ceil(totalBooks / PAGE_SIZE);
+    
+    // const { mutate: issueBook, isLoading: isIssuing } = useMutation({
+    //     mutationFn: async () => {
+    //       const response = await fetch("http://localhost:8080/api/v1/lms/borrows", {
+    //         method: "POST",
+    //         headers: {
+    //           Authorization: `Bearer ${token}`,
+    //           "Content-Type": "application/json",
+    //         },
+    //         body: JSON.stringify({
+    //           book_id: bookId,
+    //           user_id: studentId,
+    //           due_date: new Date(dueDate).toISOString(),
+    //           renewal_count: 0,
+    //         }),
+    //       });
+    //       if (!response.ok) throw new Error("Failed to issue book");
+    //       return await response.json();
+    //     },
+    //     onSuccess: () => {
+         
+    //       toast({
+    //         title: "Book issued successfully",
+    //         description: "Book has been issued to the student.",
+    //       });
+    
+    //       setLocation(`/student-catalog`);
+    //     },
+    //     onError: (error) => {
+    //       toast({
+    //         title: "Issue failed",
+    //         description: error.message,
+    //         variant: "destructive",
+    //       });
+    //     },
+    //   });
+    
   const handleBorrowBook = (book: Book) => {
+    const token = localStorage.getItem("auth-token") || "";
+    const dueDate= new Date().toISOString();
+    issueBook(token, {
+      book_id: book.id,
+      librarian_id: "",
+      user_id: studentId,
+      due_date: new Date(dueDate).toISOString(),
+      renewal_count: 0,
+    });
     toast({
       title: "Book borrowed successfully",
       description: `You have borrowed "${book.title}"`,

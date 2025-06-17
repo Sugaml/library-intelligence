@@ -15,7 +15,7 @@ export const users = pgTable("users", {
 });
 
 export const books = pgTable("books", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(),
   title: text("title").notNull(),
   author: text("author").notNull(),
   isbn: text("isbn").notNull().unique(),

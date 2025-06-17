@@ -112,4 +112,25 @@ export interface BorrowedBook {
           return null;
         }
       }
-      
+
+
+  export interface BorrowedBooRequest {
+        user_id: string;
+        book_id: string;
+        librarian_id: string;
+        due_date: string;
+        renewal_count: number;
+       
+  }
+export const issueBook = async (token: string, data: BorrowedBooRequest): Promise<BorrowedBook> => {
+  const response = await fetch("http://localhost:8080/api/v1/lms/borrows", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Failed to issue book");
+  return await response.json();
+};

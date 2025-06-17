@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { login, saveAuthUser, saveAuthToken } from "@/lib/auth";
+import { login, saveAuthUser, saveAuthToken,saveStudentID } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { Building2 } from "lucide-react";
 
@@ -27,6 +27,7 @@ export default function Login() {
       saveAuthUser(response.user);
       saveAuthToken(response.accessToken);
       setAuthUser(response.user);
+      saveStudentID(response.user?.id);
       
       toast({
         title: "Login successful",

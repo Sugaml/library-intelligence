@@ -46,6 +46,7 @@ export default function IssueBookPage() {
           librarian_id: userId,
           user_id: studentId,
           due_date: new Date(dueDate).toISOString(),
+          status:"borrowed",
           renewal_count: 0,
         }),
       });

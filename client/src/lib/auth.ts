@@ -91,6 +91,10 @@ export const saveAuthToken = (token: string): void => {
   localStorage.setItem('auth-token', token);
 };
 
+export const saveStudentID = (id: string): void => {
+  localStorage.setItem('studentId', id);
+};
+
 export const getAuthUser = (): AuthUser | null => {
   const user = localStorage.getItem('auth-user');
   return user ? JSON.parse(user) : null;
