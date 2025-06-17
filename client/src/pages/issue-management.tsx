@@ -482,7 +482,7 @@ const dueSoonBooks = borrowedBooks?.filter((item: any) => {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900">{book.book.title}</h4>
-                          <p className="text-sm text-gray-600">Student: {book.user.fullName} ({book.user.studentId})</p>
+                          <p className="text-sm text-gray-600">Student: {book.student.full_name} ({book.student.st})</p>
                           <p className="text-sm text-red-600 font-medium">
                             {getDaysUntilDue(book.dueDate)}
                           </p>
@@ -546,7 +546,7 @@ const dueSoonBooks = borrowedBooks?.filter((item: any) => {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900">{book.book.title}</h4>
-                          <p className="text-sm text-gray-600">Student: {book.user.fullName} ({book.user.studentId})</p>
+                          <p className="text-sm text-gray-600">Student: {book.student.full_name} ({book.student.student_id})</p>
                           <p className="text-sm text-amber-600 font-medium">
                             Due: {new Date(book.dueDate).toLocaleDateString()}
                           </p>

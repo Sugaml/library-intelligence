@@ -2,6 +2,7 @@ import { Book } from "@shared/schema";
 
 export interface BookQueryParams {
   search?: string;
+  title?: string;
   program?: string;
   category?: string;
   page?: number;
@@ -15,6 +16,7 @@ export const fetchBooks = async (
     const url = new URL("http://localhost:8080/api/v1/lms/books");
   
   if (params.search) url.searchParams.append("search", params.search);
+  if (params.title) url.searchParams.append("title", params.title);
   if (params.program) url.searchParams.append("program", params.program);
   if (params.category) url.searchParams.append("category", params.category);
   if (params.page) url.searchParams.append("page", params.page.toString());

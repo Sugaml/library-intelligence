@@ -67,42 +67,6 @@ export default function BookCatalog() {
       const totalBooks = data?.total || 0;
       const totalPages = Math.ceil(totalBooks / PAGE_SIZE);
     
-    // const { mutate: issueBook, isLoading: isIssuing } = useMutation({
-    //     mutationFn: async () => {
-    //       const response = await fetch("http://localhost:8080/api/v1/lms/borrows", {
-    //         method: "POST",
-    //         headers: {
-    //           Authorization: `Bearer ${token}`,
-    //           "Content-Type": "application/json",
-    //         },
-    //         body: JSON.stringify({
-    //           book_id: bookId,
-    //           user_id: studentId,
-    //           due_date: new Date(dueDate).toISOString(),
-    //           renewal_count: 0,
-    //         }),
-    //       });
-    //       if (!response.ok) throw new Error("Failed to issue book");
-    //       return await response.json();
-    //     },
-    //     onSuccess: () => {
-         
-    //       toast({
-    //         title: "Book issued successfully",
-    //         description: "Book has been issued to the student.",
-    //       });
-    
-    //       setLocation(`/student-catalog`);
-    //     },
-    //     onError: (error) => {
-    //       toast({
-    //         title: "Issue failed",
-    //         description: error.message,
-    //         variant: "destructive",
-    //       });
-    //     },
-    //   });
-    
   const handleBorrowBook = (book: Book) => {
     const token = localStorage.getItem("auth-token") || "";
     const dueDate= new Date().toISOString();
@@ -117,6 +81,7 @@ export default function BookCatalog() {
       title: "Book borrowed successfully",
       description: `You have borrowed "${book.title}"`,
     });
+    setLocation('/book-catalog');
   };
 
   const handleViewBook = (book: Book) => {

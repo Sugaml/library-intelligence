@@ -19,13 +19,14 @@ export default function IssueBookPage() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [title, setTitle] = useState("");
   const [page, setPage] = useState(1);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["books", { search, page }],
-    queryFn: () => fetchBooks({ search, page, size: ITEMS_PER_PAGE }, token),
+    queryKey: ["books", { search,title, page }],
+    queryFn: () => fetchBooks({ search, title, page, size: ITEMS_PER_PAGE }, token),
     enabled: !!token,
   });
 
@@ -84,7 +85,7 @@ export default function IssueBookPage() {
             placeholder="Search by title..."
             value={search}
             onChange={(e) => {
-              setSearch(e.target.value);
+              setTitle(e.target.value);
               setPage(1);
             }}
           />
