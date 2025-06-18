@@ -17,9 +17,10 @@ import AddBook from "@/pages/add-book";
 import IssueManagement from "@/pages/issue-management";
 import Reports from './pages/reports';
 import AddStudent from "./pages/add-student";
-import StudentDetails from "./pages/student-details";
 import StudentDetail from "./pages/student";
 import IssueBookPage from "./pages/issue-book";
+import UpdateBook from "./pages/update-book";
+import BookDetail from "./pages/book";
 
 function ProtectedRoute({ 
   children, 
@@ -124,6 +125,18 @@ function Router() {
       <Route path="/add-book">
         <ProtectedRoute requiredRole="librarian">
           <AddBook />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/book/:id">
+        <ProtectedRoute requiredRole="librarian">
+          <BookDetail />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/update-book/:id">
+        <ProtectedRoute requiredRole="librarian">
+          <UpdateBook />
         </ProtectedRoute>
       </Route>
 

@@ -87,8 +87,11 @@ export default function InventoryManagement() {
 
   const deleteBookMutation = useMutation({
     mutationFn: async (bookId: number) => {
-      const response = await fetch(`/api/books/${bookId}`, {
+      const response = await fetch(`http://localhost:8080/api/v1/lms/books/${bookId}`, {
         method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (!response.ok) throw new Error('Failed to delete book');
       return response.json();
@@ -322,10 +325,20 @@ export default function InventoryManagement() {
                       <TableCell>{getStatusBadge(book)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
-                          <Button variant="ghost" size="sm" className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10">
-                            <Edit className="w-4 h-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="tu-text-blue hover:tu-bg-blue hover:bg-opacity-10"
+                            onClick={() => window.location.href = '/update-book/' + book.id}
+                          >
+                          <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-gray-600 hover:bg-gray-100">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-gray-600 hover:bg-gray-100"
+                            onClick={() => window.location.href = '/book/' + book.id}
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
                           <Button
